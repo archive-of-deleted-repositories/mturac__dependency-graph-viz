@@ -1,0 +1,19 @@
+{
+  "name": "dependency-graph-viz",
+  "version": "0.1.0",
+  "description": "Build import dependency graph, detect circular dependencies and deep chains that create brittle architectures.",
+  "author": {
+    "name": "mturac"
+  },
+  "skills": [
+    "skills/dep-graph",
+    "skills/dep-cycles",
+    "skills/dep-depth"
+  ],
+  "commands": [
+    "commands/dep-graph.md",
+    "commands/dep-cycles.md",
+    "commands/dep-depth.md",
+    "commands/dep-report.md"
+  ]
+}

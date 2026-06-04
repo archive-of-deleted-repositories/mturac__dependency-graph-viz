@@ -1,0 +1,101 @@
+name: Validate Plugin Structure
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check plugin.json exists
+        run: |
+          if [ ! -f ".claude-plugin/plugin.json" ]; then
+            echo "ERROR: .claude-plugin/plugin.json not found"
+            exit 1
+          fi
+          echo "plugin.json found"
+
+      - name: Validate plugin.json structure
+        run: |
+          python3 -c "
+          import json, sys
+          with open('.claude-plugin/plugin.json') as f:
+              p = json.load(f)
+          required = ['name', 'version', 'author', 'skills', 'commands']
+          missing = [k for k in required if k not in p]
+          if missing:
+              print(f'ERROR: plugin.json missing keys: {missing}')
+              sys.exit(1)
+          if not isinstance(p['skills'], list):
+              print('ERROR: skills must be an array')
+              sys.exit(1)
+          if not isinstance(p['commands'], list):
+              print('ERROR: commands must be an array')
+              sys.exit(1)
+          print(f'plugin.json valid — name={p[\"name\"]} version={p[\"version\"]}')
+          "
+
+      - name: Check marketplace.json exists
+        run: |
+          if [ ! -f ".claude-plugin/marketplace.json" ]; then
+            echo "ERROR: .claude-plugin/marketplace.json not found"
+            exit 1
+          fi
+          python3 -c "
+          import json
+          with open('.claude-plugin/marketplace.json') as f:
+              m = json.load(f)
+          if 'keywords' not in m or not isinstance(m['keywords'], list):
+              raise ValueError('marketplace.json must have keywords array')
+          print(f'marketplace.json valid — {len(m[\"keywords\"])} keywords')
+          "
+
+      - name: Check all declared skills exist
+        run: |
+          python3 -c "
+          import json, os, sys
+          with open('.claude-plugin/plugin.json') as f:
+              p = json.load(f)
+          errors = []
+          for skill in p['skills']:
+              skill_md = os.path.join(skill, 'SKILL.md')
+              if not os.path.exists(skill_md):
+                  errors.append(f'Missing: {skill_md}')
+          if errors:
+              print('\\n'.join(errors))
+              sys.exit(1)
+          print(f'All {len(p[\"skills\"])} skill SKILL.md files present')
+          "
+
+      - name: Check all declared commands exist
+        run: |
+          python3 -c "
+          import json, os, sys
+          with open('.claude-plugin/plugin.json') as f:
+              p = json.load(f)
+          errors = []
+          for cmd in p['commands']:
+              if not os.path.exists(cmd):
+                  errors.append(f'Missing: {cmd}')
+          if errors:
+              print('\\n'.join(errors))
+              sys.exit(1)
+          print(f'All {len(p[\"commands\"])} command files present')
+          "
+
+      - name: Check README exists
+        run: |
+          if [ ! -f "README.md" ]; then
+            echo "ERROR: README.md not found"
+            exit 1
+          fi
+          echo "README.md found"
+
+      - name: Plugin structure validated successfully
+        run: echo "All checks passed for dependency-graph-viz"
